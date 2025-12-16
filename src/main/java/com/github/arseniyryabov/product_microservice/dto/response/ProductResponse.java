@@ -1,30 +1,24 @@
-package com.github.arseniyryabov.product_microservice.entity;
+package com.github.arseniyryabov.product_microservice.dto.response;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "products")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductsEntity {
+public class ProductResponse {
 
-    @Id
-    @GeneratedValue
     private UUID productId;
-
-    @Column(nullable = false, length = 255)
     private String name;
-
-    @Column(nullable = false)
     private BigDecimal price;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
