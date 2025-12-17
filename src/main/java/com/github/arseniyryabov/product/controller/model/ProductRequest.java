@@ -1,4 +1,4 @@
-package com.github.arseniyryabov.product_microservice.dto.request;
+package com.github.arseniyryabov.product.controller.model;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

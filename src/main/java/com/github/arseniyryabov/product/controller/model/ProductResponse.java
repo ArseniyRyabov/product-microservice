@@ -1,4 +1,4 @@
-package com.github.arseniyryabov.product_microservice.dto.response;
+package com.github.arseniyryabov.product.controller.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

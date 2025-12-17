@@ -1,10 +1,10 @@
-package com.github.arseniyryabov.product_microservice;
+package com.github.arseniyryabov.product;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ProductMicroserviceApplicationTests {
+class ProductApplicationTests {
 
 	@Test
 	void contextLoads() {

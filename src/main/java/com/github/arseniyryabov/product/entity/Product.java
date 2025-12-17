@@ -1,4 +1,4 @@
-package com.github.arseniyryabov.product_microservice.entity;
+package com.github.arseniyryabov.product.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

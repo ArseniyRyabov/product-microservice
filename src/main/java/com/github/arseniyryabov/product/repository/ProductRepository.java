@@ -1,6 +1,6 @@
-package com.github.arseniyryabov.product_microservice.repository;
+package com.github.arseniyryabov.product.repository;
 
-import com.github.arseniyryabov.product_microservice.entity.Product;
+import com.github.arseniyryabov.product.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
