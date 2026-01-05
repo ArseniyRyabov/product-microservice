@@ -1,9 +1,6 @@
 package com.github.arseniyryabov.product.controller.model;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +21,10 @@ public class ProductRequest {
     @NotNull(message = "Цена продукта обязательна")
     @DecimalMin(value = "0.0", inclusive = false, message = "Цена должна быть больше 0")
     private BigDecimal price;
+
+    @NotNull(message = "Количество на складе обязательно")
+    @Min(value = 0, message = "Количество не может быть отрицательным")
+    private Integer stockQuantity;
 
     private String description;
 }

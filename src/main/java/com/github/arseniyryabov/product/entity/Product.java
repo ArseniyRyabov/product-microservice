@@ -21,7 +21,7 @@ import java.util.UUID;
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "product_id")
+    @Column(name = "product_id", updatable = false, nullable = false)
     private UUID productId;
 
     @Column(name = "name", nullable = false, length = 255)
@@ -29,6 +29,9 @@ public class Product {
 
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
+
+    @Column(name = "stock_quantity", nullable = false)
+    private Integer stockQuantity;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

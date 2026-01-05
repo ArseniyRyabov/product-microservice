@@ -8,9 +8,12 @@ spring:
     password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
-        ddl-auto: none
+        id:
+          uuid_generation_strategy: org.hibernate.id.uuid.StandardRandomStrategy
         dialect: org.hibernate.dialect.PostgreSQLDialect
   liquibase:
     enabled: true
