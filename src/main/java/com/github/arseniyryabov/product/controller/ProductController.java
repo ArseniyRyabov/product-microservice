@@ -23,70 +23,13 @@ public class ProductController {
 
     private final ProductService productService;
 
-    // Создание товара (POST /products)
-    @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
-        // @Valid включает валидацию данных запроса
-        Product product = productService.createProduct(request);
-        ProductResponse response = mapToResponse(product);
-        // Возвращается статус 201 Created и созданный товар
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
     // Получение товара по ID (GET /products/{id})
     @GetMapping("/{productId}")
     public ProductResponse getProduct(@PathVariable UUID productId) {
+        // Если товар не найден, ProductService выбросит ProductNotFoundException,
+        // которое будет обработано в GlobalExceptionHandler
         Product product = productService.getProductById(productId);
         return mapToResponse(product);
-    }
-
-    // Получение всех товаров (GET /products)
-    @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        // Преобразование списка товаров в список DTO
-        List<ProductResponse> response = products.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(response);
-    }
-
-    // Обновление товара (PUT /products/{id})
-    @PutMapping("/{productId}")
-    public ProductResponse updateProduct(
-            @PathVariable UUID productId,
-            @Valid @RequestBody ProductRequest request) {
-        Product product = productService.updateProduct(productId, request);
-        return mapToResponse(product);
-    }
-
-    // Удаление товара (DELETE /products/{id})
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable UUID productId) {
-        productService.deleteProduct(productId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Пакетное получение товаров (POST /products/batch)
-    @PostMapping("/batch")
-    public List<ProductResponse> getProductsBatch(@RequestBody List<UUID> productIds) {
-        List<Product> products = productService.getProductsByIds(productIds);
-        return products.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    // Преобразование Product в ProductResponse (DTO)
-    private ProductResponse mapToResponse(Product product) {
-        return ProductResponse.builder()
-                .productId(product.getProductId())
-                .name(product.getName())
-                .price(product.getPrice())
-                .description(product.getDescription())
-                .stockQuantity(product.getStockQuantity())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
-                .build();
     }
 
     // Уменьшение количества товара на складе (POST /products/{id}/decrease-stock)
@@ -95,17 +38,8 @@ public class ProductController {
             @PathVariable UUID productId,
             @RequestBody @Valid DecreaseStockRequest request) {
 
+        // Если товар не найден или недостаточно товара, будут выброшены исключения
         productService.decreaseStockQuantity(productId, request.getQuantity());
-        return ResponseEntity.ok().build();
-    }
-
-    // Увеличение количества товара на складе (POST /products/{id}/increase-stock)
-    @PostMapping("/{productId}/increase-stock")
-    public ResponseEntity<Void> increaseStock(
-            @PathVariable UUID productId,
-            @RequestBody @Valid IncreaseStockRequest request) {
-
-        productService.increaseStockQuantity(productId, request.getQuantity());
         return ResponseEntity.ok().build();
     }
 
@@ -115,6 +49,7 @@ public class ProductController {
             @PathVariable UUID productId,
             @RequestParam Integer quantity) {
 
+        // Если товар не найден, будет ProductNotFoundException
         boolean isAvailable = productService.isProductAvailable(productId, quantity);
         Product product = productService.getProductById(productId);
 
@@ -128,21 +63,37 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    // Пакетная проверка доступности товаров (POST /products/batch/availability)
-    @PostMapping("/batch/availability")
-    public ResponseEntity<Map<UUID, Boolean>> checkBatchAvailability(
-            @RequestBody @Valid BatchAvailabilityRequest request) {
+    // Пакетное получение товаров (POST /products/batch)
+    @PostMapping("/batch")
+    public List<ProductResponse> getProductsBatch(@RequestBody List<UUID> productIds) {
+        // Некоторые товары могут не существовать - будет возвращен пустой список для них
+        List<Product> products = productService.getProductsByIds(productIds);
+        return products.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
-        Map<UUID, Boolean> availabilityMap = new HashMap<>();
+    // Для пакетного получения мы можем также создать специальный метод, который выбрасывает исключение
+    @PostMapping("/batch/validate")
+    public List<ProductResponse> getProductsBatchWithValidation(@RequestBody List<UUID> productIds) {
+        // Проверяем каждый товар - если хоть один не найден, выбрасываем исключение
+        productIds.forEach(productService::getProductById);
 
-        for (BatchAvailabilityRequest.ProductQuantity item : request.getItems()) {
-            boolean isAvailable = productService.isProductAvailable(
-                    item.getProductId(),
-                    item.getQuantity()
-            );
-            availabilityMap.put(item.getProductId(), isAvailable);
-        }
+        List<Product> products = productService.getProductsByIds(productIds);
+        return products.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
-        return ResponseEntity.ok(availabilityMap);
+    private ProductResponse mapToResponse(Product product) {
+        return ProductResponse.builder()
+                .productId(product.getProductId())
+                .name(product.getName())
+                .price(product.getPrice())
+                .description(product.getDescription())
+                .stockQuantity(product.getStockQuantity())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build();
     }
 }

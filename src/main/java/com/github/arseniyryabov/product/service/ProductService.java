@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // Сервисный слой для работы с товарами
 @Service
@@ -48,7 +50,7 @@ public class ProductService {
 
     // Обновление информации о товаре
     public Product updateProduct(UUID productId, ProductRequest request) {
-        // Получение существующего товара
+        // Получение существующего товара (если не найден, будет ProductNotFoundException)
         Product product = getProductById(productId);
 
         // Обновление поля товара
@@ -56,7 +58,7 @@ public class ProductService {
         product.setPrice(request.getPrice());
         product.setDescription(request.getDescription());
         product.setStockQuantity(request.getStockQuantity());
-        product.setUpdatedAt(LocalDateTime.now()); // Устанавливается время обновления
+        product.setUpdatedAt(LocalDateTime.now());
 
         // Сохранение обновленного товара
         return productRepository.save(product);
@@ -64,7 +66,7 @@ public class ProductService {
 
     // Удаление товара
     public void deleteProduct(UUID productId) {
-        // Проверка существования товара
+        // Проверка существования товара (если не найден, будет ProductNotFoundException)
         Product product = getProductById(productId);
         productRepository.delete(product);
     }
@@ -72,11 +74,13 @@ public class ProductService {
     // Получение списка товаров по списку ID
     public List<Product> getProductsByIds(List<UUID> productIds) {
         return productRepository.findAllById(productIds);
+        // Примечание: этот метод НЕ выбрасывает исключение, если некоторые товары не найдены
+        // Он возвращает те, которые найдены
     }
 
     // Проверка доступности товара (кол-во на складе)
     public boolean isProductAvailable(UUID productId, Integer requestedQuantity) {
-        Product product = getProductById(productId);
+        Product product = getProductById(productId);  // Если не найден, будет ProductNotFoundException
         return product.getStockQuantity() >= requestedQuantity;
     }
 
@@ -103,5 +107,25 @@ public class ProductService {
         product.setStockQuantity(product.getStockQuantity() + quantity);
         product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
+    }
+
+    // Альтернативный метод, который проверяет наличие всех товаров
+    public List<Product> getProductsByIdsWithValidation(List<UUID> productIds) {
+        List<Product> products = productRepository.findAllById(productIds);
+
+        // Проверяем, что все запрошенные товары найдены
+        Set<UUID> foundIds = products.stream()
+                .map(Product::getProductId)
+                .collect(Collectors.toSet());
+
+        List<UUID> notFoundIds = productIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .collect(Collectors.toList());
+
+        if (!notFoundIds.isEmpty()) {
+            throw new ProductNotFoundException("Товары с ID " + notFoundIds + " не найдены");
+        }
+
+        return products;
     }
 }
