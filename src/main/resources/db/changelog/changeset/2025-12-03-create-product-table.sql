@@ -11,7 +11,8 @@ CREATE TABLE products (
     description TEXT,
     stock_quantity INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    updated_at TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 0
 );
 
 --changeset arseniyryabov:create-products-indexes
