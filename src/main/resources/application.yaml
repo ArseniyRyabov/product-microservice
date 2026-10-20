@@ -18,3 +18,7 @@ spring:
   liquibase:
     enabled: true
     changelog: classpath:db/changelog/db.changelog-master.yaml
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

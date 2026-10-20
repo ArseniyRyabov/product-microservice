@@ -1,5 +1,8 @@
 package com.github.arseniyryabov.product.exception;
 
+import jakarta.persistence.OptimisticLockException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,66 +14,74 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Обработка ProductNotFoundException - возвращаем 404
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFoundException(
             ProductNotFoundException ex, WebRequest request) {
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
-                .message(ex.getMessage())
-                .path(request.getDescription(false).replace("uri=", ""))
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        log.warn("Product not found: {}", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    // Обработка InsufficientStockException - возвращаем 400
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientStockException(
             InsufficientStockException ex, WebRequest request) {
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(ex.getMessage())
-                .path(request.getDescription(false).replace("uri=", ""))
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        log.warn("Insufficient stock: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
-    // Обработка ошибок валидации @Valid
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(
+            OptimisticLockingFailureException ex, WebRequest request) {
+        log.warn("Optimistic lock failure: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Concurrent modification, retry the request", request);
+    }
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<ErrorResponse> handleJpaOptimisticLock(
+            OptimisticLockException ex, WebRequest request) {
+        log.warn("JPA optimistic lock failure: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Concurrent modification, retry the request", request);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex, WebRequest request) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
-
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage()));
-
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // Обработка всех остальных исключений
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex, WebRequest request) {
+        log.error("Unhandled exception on path {}", path(request), ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Произошла внутренняя ошибка сервера", request);
+    }
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, WebRequest request) {
+        ErrorResponse body = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message("Произошла внутренняя ошибка сервера")
-                .path(request.getDescription(false).replace("uri=", ""))
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(path(request))
                 .build();
+        return new ResponseEntity<>(body, status);
+    }
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    private String path(WebRequest request) {
+        return request.getDescription(false).replace("uri=", "");
     }
 }
